@@ -7,11 +7,104 @@ export class Extractor {
     private browser: any = null;
     private targetEndpoints: string[] = [];
     private discoveryMode: boolean = true;
+    private readonly get1x2Api: string;
 
     constructor() {
         const endpointsStr = process.env.TARGET_ENDPOINTS || '';
         this.targetEndpoints = endpointsStr.split(',').map(e => e.trim()).filter(e => e.length > 0);
         this.discoveryMode = process.env.DISCOVERY_MODE === 'true';
+        this.get1x2Api = process.env.GET1X2_API_URL || 'https://mel-bet.et/service-api/LiveFeed/Get1x2_VZip';
+    }
+
+    private processMelbetResponse(body: string, source: string) {
+        let finalBody = '{}';
+        try {
+            const jsonObj = JSON.parse(body);
+            if (jsonObj && jsonObj.Value && Array.isArray(jsonObj.Value)) {
+                let matchCount = 0;
+                let excludedCount = 0;
+                const mappedValue = jsonObj.Value.flatMap((item: any) => {
+                    if (item.O1 && item.O2 && item.SC && item.SC.FS) {
+                        const results: any[] = [];
+                        if (item.SC.PS && Array.isArray(item.SC.PS)) {
+                            const isBasketball = item.SC.PS.some((p: any) =>
+                                (p.Value?.NF || '').toLowerCase().includes('quarter'),
+                            );
+                            if (isBasketball) {
+                                const isCyber = (item.O1 && item.O1.toLowerCase().includes('(cyber)')) || (item.O2 && item.O2.toLowerCase().includes('(cyber)'));
+                                if (!isCyber) {
+                                    excludedCount++;
+                                    return [];
+                                }
+                                Metrics.recordNormalizedMatch();
+                                matchCount++;
+                                for (const period of item.SC.PS) {
+                                    const pv = period.Value || {};
+                                    const periodName = pv.NF || `Quarter ${period.Key || 1}`;
+                                    results.push({
+                                        ...item,
+                                        id: item.I,
+                                        home_team: item.O1,
+                                        away_team: item.O2,
+                                        home_score: pv.S1 ?? 0,
+                                        away_score: pv.S2 ?? 0,
+                                        quarter: periodName,
+                                        clock: item.SC.SLS || '',
+                                        status: 'LIVE',
+                                    });
+                                }
+                                if (item.F) {
+                                    results.push({
+                                        ...item,
+                                        id: item.I,
+                                        home_team: item.O1,
+                                        away_team: item.O2,
+                                        home_score: item.SC.FS.S1,
+                                        away_score: item.SC.FS.S2,
+                                        quarter: 'FT',
+                                        clock: '0:00',
+                                        status: 'FINISHED',
+                                    });
+                                }
+                            } else {
+                                excludedCount++;
+                            }
+                        }
+                        if (results.length > 0) return results;
+                        return [];
+                    }
+                    return [];
+                });
+                if (excludedCount > 0) console.log(`[${source}] Excluded ${excludedCount} non-basketball matches`);
+                if (matchCount > 0) console.log(`[${source}] Cyber matches found: ${matchCount}`);
+                finalBody = JSON.stringify({ ...jsonObj, Value: mappedValue });
+            }
+        } catch(e) {
+            console.error(`[${source}] Normalizer error:`, e);
+        }
+        Parser.parseResponse(source, finalBody);
+    }
+
+    private async pollApi() {
+        const params = '?sports=3&count=40&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
+        try {
+            const response = await fetch(this.get1x2Api + params, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Referer': 'https://mel-bet.et/',
+                    'Origin': 'https://mel-bet.et',
+                },
+                signal: AbortSignal.timeout(15000),
+            });
+            const body = await response.text();
+            if (body && body.length > 2) {
+                console.log(`[DIRECT_API] Fetched ${body.length} bytes from Get1x2_VZip`);
+                await this.processMelbetResponse(body, 'DIRECT_API');
+            }
+        } catch (e) {
+            console.error('[DIRECT_API] Poll error:', e);
+        }
     }
 
     async start(url: string) {
@@ -228,6 +321,11 @@ export class Extractor {
 
         const launchUrl = url;
         await setupPage();
+
+        // Start direct API polling (bypasses browser geo-blocking for live data)
+        console.log('[Extractor] Starting direct API polling...');
+        await this.pollApi(); // Initial fetch
+        setInterval(() => this.pollApi(), 15_000);
 
         setInterval(async () => {
             console.log('[Extractor] Navigating to re-trigger API calls...');
