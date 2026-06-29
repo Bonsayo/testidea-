@@ -1,3 +1,4 @@
+import http from 'http';
 import { config } from 'dotenv';
 import fs from 'fs';
 
@@ -16,6 +17,17 @@ config(); // load .env — fills in TARGET_URL etc. without overwriting
 import { initStorage } from './db';
 import { ServiceRunner } from './service';
 import { Metrics } from './metrics';
+
+const port = parseInt(process.env.PORT || '3000', 10);
+http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+    } else {
+        res.writeHead(404);
+        res.end();
+    }
+}).listen(port, () => console.log(`[Health] Server listening on port ${port}`));
 
 const convexUrl = process.env.CONVEX_URL || '(not set)';
 const targetUrl = process.env.TARGET_URL || '(not set)';
