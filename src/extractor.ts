@@ -21,8 +21,15 @@ export class Extractor {
             executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
         });
 
+        const context = await this.browser.newContext({
+            locale: 'en-ET',
+            timezoneId: 'Africa/Addis_Ababa',
+            geolocation: { latitude: 9.0320, longitude: 38.7469 },
+            permissions: ['geolocation'],
+        });
+
         const setupPage = async () => {
-            this.page = await this.browser.newPage();
+            this.page = await context.newPage();
 
             this.page.on('crash', async () => {
                 console.log('[Extractor] Page crashed! Recreating...');
