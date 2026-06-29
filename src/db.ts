@@ -123,7 +123,7 @@ class ConvexAdapter implements StorageAdapter {
             await this.client.mutation(this.anyApi.mutations.saveMatch, {
                 matchId: match.id,
                 matchName: `${match.home_team} vs ${match.away_team}`,
-                startedAt: match.startedAt ?? scores.length > 0 ? scores[0].event_time : Date.now(),
+                startedAt: match.startedAt ?? (scores.length > 0 ? scores[0]!.event_time : Date.now()),
                 finishedAt,
                 finalHomeScore,
                 finalAwayScore,
