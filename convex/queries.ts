@@ -7,7 +7,11 @@ import { v } from "convex/values";
 export const getMatchHistory = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("matches").order("desc").collect();
+    const results = await ctx.db
+      .query("matches")
+      .withIndex("by_matchId")
+      .collect();
+    return results.slice(0, 50);
   },
 });
 
