@@ -30,7 +30,8 @@ COPY src src
 COPY tsconfig.json .
 
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 EXPOSE 3000
 
-CMD ["npx", "tsx", "src/index.ts"]
+CMD npx tsx src/index.ts

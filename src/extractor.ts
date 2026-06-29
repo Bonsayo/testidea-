@@ -16,7 +16,10 @@ export class Extractor {
 
     async start(url: string) {
         console.log(`Starting Extractor for URL: ${url}`);
-        this.browser = await chromium.launch({ headless: true });
+        this.browser = await chromium.launch({
+            headless: true,
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+        });
 
         const setupPage = async () => {
             this.page = await this.browser.newPage();
