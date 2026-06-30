@@ -38,6 +38,22 @@ export class Extractor {
                                 }
                                 Metrics.recordNormalizedMatch();
                                 matchCount++;
+
+                                // Extract odds from MelBet format
+                                const odds: { home?: number; away?: number; over_under?: number } = {};
+                                if (item.E && Array.isArray(item.E)) {
+                                    for (const m of item.E) {
+                                        if (m.T === 1 && m.C != null) odds.home = Number(m.C);
+                                        if (m.T === 2 && m.C != null) odds.away = Number(m.C);
+                                        if (m.T === 17 && m.C != null) {
+                                            odds.over_under = m.P != null ? Number(m.P) : Number(m.C);
+                                        }
+                                    }
+                                }
+                                if (odds.home != null) {
+                                    console.log(`[Odds] ${item.I} | home=${odds.home} away=${odds.away} ou=${odds.over_under}`);
+                                }
+
                                 for (const period of item.SC.PS) {
                                     const pv = period.Value || {};
                                     const periodName = pv.NF || `Quarter ${period.Key || 1}`;
@@ -51,6 +67,7 @@ export class Extractor {
                                         quarter: periodName,
                                         clock: item.SC.SLS || '',
                                         status: 'LIVE',
+                                        odds,
                                     });
                                 }
                                 if (item.F) {
@@ -64,6 +81,7 @@ export class Extractor {
                                         quarter: 'FT',
                                         clock: '0:00',
                                         status: 'FINISHED',
+                                        odds,
                                     });
                                 }
                             } else {
@@ -256,6 +274,19 @@ export class Extractor {
                                             }
                                             Metrics.recordNormalizedMatch();
                                             matchCount++;
+
+                                            // Extract odds from MelBet format
+                                            const odds: { home?: number; away?: number; over_under?: number } = {};
+                                            if (item.E && Array.isArray(item.E)) {
+                                                for (const m of item.E) {
+                                                    if (m.T === 1 && m.C != null) odds.home = Number(m.C);
+                                                    if (m.T === 2 && m.C != null) odds.away = Number(m.C);
+                                                    if (m.T === 17 && m.C != null) {
+                                                        odds.over_under = m.P != null ? Number(m.P) : Number(m.C);
+                                                    }
+                                                }
+                                            }
+
                                             for (const period of item.SC.PS) {
                                                 const pv = period.Value || {};
                                                 const periodName = pv.NF || `Quarter ${period.Key || 1}`;
@@ -269,6 +300,7 @@ export class Extractor {
                                                     quarter: periodName,
                                                     clock: item.SC.SLS || '',
                                                     status: 'LIVE',
+                                                    odds,
                                                 });
                                             }
                                             if (item.F) {
@@ -282,6 +314,7 @@ export class Extractor {
                                                     quarter: 'FT',
                                                     clock: '0:00',
                                                     status: 'FINISHED',
+                                                    odds,
                                                 });
                                             }
                                         } else {

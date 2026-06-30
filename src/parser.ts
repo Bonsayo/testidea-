@@ -50,13 +50,13 @@ export class Parser {
             }
 
             // Extract Odds
-            if (obj.odds && obj.odds.home && obj.odds.away && obj.odds.over_under) {
+            if (obj.odds && (obj.odds.home != null || obj.odds.away != null)) {
                 const oddsEvent: OddsEvent = {
                     match_id: match.id,
                     timestamp: Date.now(),
-                    home_odds: Number(obj.odds.home),
-                    away_odds: Number(obj.odds.away),
-                    over_under_line: Number(obj.odds.over_under)
+                    home_odds: obj.odds.home != null ? Number(obj.odds.home) : 0,
+                    away_odds: obj.odds.away != null ? Number(obj.odds.away) : 0,
+                    over_under_line: obj.odds.over_under != null ? Number(obj.odds.over_under) : 0,
                 };
                 
                 // Only insert if odds changed
