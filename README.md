@@ -18,6 +18,14 @@ npx tsx src/index.ts  # starts the pipeline
 
 ## Deploying
 
-- **Pipeline** — deployed on Render using the `Dockerfile`
+- **Pipeline (Render)** — deployed using the `Dockerfile`; sleeps on free tier
+- **Pipeline (GitHub Actions)** — runs every 10 minutes via `.github/workflows/scrape.yml`; free, 24/7, no credit card needed
 - **Site** — auto-deploys to GitHub Pages via `.github/workflows/deploy-site.yml`
 - **Convex functions** — deploy with `npx convex deploy`
+
+## 24/7 Scraping (no credit card)
+
+The `.github/workflows/scrape.yml` workflow runs on GitHub's servers every 10 minutes.
+It fetches the MelBet API, normalizes matches, and persists to Convex — no Playwright or browser needed.
+The workflow is free for public repos (2000 min/month included). On average each run takes ~10-15 seconds,
+so you use about 30-45 minutes per month — well within the free tier.
