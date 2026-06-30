@@ -77,7 +77,16 @@ class ConvexAdapter implements StorageAdapter {
     private async enqueueMutation(mutationFn: () => Promise<void>) {
         this.retryQueue.push(mutationFn);
         Metrics.updateRetryQueueSize(this.retryQueue.length);
-        this.processQueue();
+        this.processQueue().catch(() => {});
+    }
+
+    private withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+        return Promise.race([
+            promise,
+            new Promise<T>((_, reject) =>
+                setTimeout(() => reject(new Error(`[Storage] Mutation timed out after ${ms}ms (${label})`)), ms)
+            ),
+        ]);
     }
 
     private async processQueue() {
@@ -91,7 +100,7 @@ class ConvexAdapter implements StorageAdapter {
         for (const mutation of currentQueue) {
             const start = performance.now();
             try {
-                await mutation();
+                await this.withTimeout(mutation(), 30_000, `mutation ${currentQueue.indexOf(mutation) + 1}/${currentQueue.length}`);
                 Metrics.recordMutationLatency(Math.round(performance.now() - start));
             } catch (err) {
                 Metrics.recordFailedMutation();
@@ -103,6 +112,11 @@ class ConvexAdapter implements StorageAdapter {
         }
 
         this.isProcessingQueue = false;
+
+        // Process any mutations that were queued while this batch ran
+        if (this.retryQueue.length > 0) {
+            this.processQueue().catch(() => {});
+        }
     }
 
     async persistMatch(match: Match, scores: ScoreEvent[]): Promise<void> {

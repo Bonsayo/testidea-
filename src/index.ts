@@ -68,7 +68,7 @@ ${lastScore ? `<div class="score">${lastScore.home_score} - ${lastScore.away_sco
 </div>`;
 }).join('') || '<p>No matches in cache yet. Waiting for live data...</p>'}
 <p style="margin-top:2rem;color:#8b949e;font-size:.9rem">
-Pipeline refreshes every 15s · Convex: <a href="https://dashboard.convex.dev/t/mnkald-uonoto/met-bet/youthful-coyote-883" target="_blank">youthful-coyote-883</a>
+Pipeline refreshes every 15s · Convex: <a href="https://dashboard.convex.dev/t/mnkald-uonoto/met-bet/clear-finch-529" target="_blank">clear-finch-529</a>
 </p>
 </body>
 </html>`);

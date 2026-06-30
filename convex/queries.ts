@@ -11,7 +11,7 @@ export const getMatchHistory = query({
       .query("matches")
       .withIndex("by_matchId")
       .collect();
-    return results.slice(0, 50);
+    return results;
   },
 });
 
