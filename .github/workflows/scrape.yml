@@ -1,0 +1,22 @@
+name: Scrape MelBet
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+env:
+  CONVEX_URL: https://clear-finch-529.convex.cloud
+  GET1X2_API_URL: https://mel-bet.et/service-api/LiveFeed/Get1x2_VZip
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx tsx src/cron_scrape.ts
