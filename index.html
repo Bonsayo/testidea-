@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cyber Basketball Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:1.5rem}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+h1{color:#58a6ff;font-size:1.5rem}
+#lastUpdate{color:#8b949e;font-size:.85rem}
+.stats{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.75rem 1.25rem;text-align:center;min-width:120px}
+.stat .val{font-size:1.5rem;font-weight:700;color:#58a6ff}
+.stat .lbl{font-size:.75rem;color:#8b949e;margin-top:.25rem}
+.matches{display:grid;gap:.75rem}
+.match{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem}
+.match-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.teams{font-size:1.05rem;font-weight:600}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.live{background:#3fb95022;color:#3fb950;border:1px solid #3fb950}
+.finished{background:#8b949e22;color:#8b949e;border:1px solid #8b949e}
+.score{font-size:2rem;font-weight:700;color:#f0f6fc;margin:.25rem 0}
+.quarter-info{color:#8b949e;font-size:.85rem}
+.quarters{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
+.quarter{background:#0d1117;padding:4px 10px;border-radius:4px;font-size:.8rem;color:#c9d1d9}
+.odds-row{display:flex;gap:1rem;margin-top:.5rem;font-size:.85rem;color:#8b949e}
+.odds-row span{background:#0d1117;padding:4px 10px;border-radius:4px}
+.match-id{color:#484f58;font-size:.7rem;margin-top:.25rem}
+.error{color:#f85149;padding:2rem;text-align:center}
+.loading{text-align:center;padding:3rem;color:#8b949e}
+</style>
+</head>
+<body>
+<header>
+<h1>Cyber Basketball</h1>
+<span id="lastUpdate">Loading...</span>
+</header>
+<div class="stats" id="stats"></div>
+<div id="content" class="loading">Loading matches...</div>
+<script>
+const CONVEX_URL = 'https://clear-finch-529.convex.cloud';
+
+async function query(fn, args = {}) {
+  const res = await fetch(`${CONVEX_URL}/api/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: `queries.js:${fn}`, args }),
+  });
+  const data = await res.json();
+  return data.value;
+}
+
+async function load() {
+  try {
+    const [matches, finals] = await Promise.all([
+      query('getMatchHistory'),
+      query('getFinalScores'),
+    ]);
+
+    document.getElementById('lastUpdate').textContent =
+      `Updated: ${new Date().toLocaleTimeString()}`;
+
+    const liveMatches = matches.filter(m => !m.finishedAt);
+    const finishedMatches = matches.filter(m => m.finishedAt);
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="val">${matches.length}</div><div class="lbl">Total</div></div>
+      <div class="stat"><div class="val">${liveMatches.length}</div><div class="lbl">Live</div></div>
+      <div class="stat"><div class="val">${finishedMatches.length}</div><div class="lbl">Finished</div></div>
+    `;
+
+    let html = '';
+    for (const m of [...liveMatches, ...finishedMatches]) {
+      let quarters;
+      try {
+        quarters = await query('getQuarterScores', { matchId: m.matchId });
+      } catch { quarters = []; }
+
+      const isLive = !m.finishedAt;
+      const last = quarters[quarters.length - 1];
+      const statusLabel = isLive ? 'LIVE' : 'FINISHED';
+      const badgeClass = isLive ? 'live' : 'finished';
+
+      html += `<div class="match">
+        <div class="match-header">
+          <span class="teams">${m.matchName || m.matchId}</span>
+          <span class="badge ${badgeClass}">${statusLabel}</span>
+        </div>
+        <div class="score">${m.finalHomeScore ?? last?.homeScore ?? '?'} - ${m.finalAwayScore ?? last?.awayScore ?? '?'}</div>
+        <div class="quarter-info">${last?.quarter || '—'} ${last?.snapshotType || ''}</div>
+        <div class="quarters">${quarters.map(q => `<span class="quarter">${q.quarter}: ${q.homeScore}-${q.awayScore}</span>`).join('')}</div>
+        <div class="match-id">ID: ${m.matchId}</div>
+      </div>`;
+    }
+    document.getElementById('content').innerHTML = html || '<p style="text-align:center;color:#8b949e;padding:2rem">No matches yet.</p>';
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div class="error">Error: ${e.message}</div>`;
+  }
+}
+
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>
