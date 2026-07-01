@@ -112,7 +112,8 @@ function normalizeResponse(body: string): string {
                                     odds,
                                 });
                             }
-                            if (item.F) {
+                            const hasAllQuarters = item.SC.PS.length >= 4;
+                            if (item.F || hasAllQuarters) {
                                 results.push({
                                     ...item,
                                     id: item.I,
