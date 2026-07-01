@@ -91,7 +91,7 @@ async function load() {
         <div class="score">${m.finalHomeScore ?? last?.homeScore ?? '?'} - ${m.finalAwayScore ?? last?.awayScore ?? '?'}</div>
         <div class="quarter-info">${last?.quarter || '—'} ${last?.snapshotType || ''}</div>
         <div class="quarters">${quarters.map(q => `<span class="quarter">${q.quarter}: ${q.homeScore}-${q.awayScore}</span>`).join('')}</div>
-        <div class="match-id">ID: ${m.matchId}</div>
+        <div class="match-id">ID: ${m.matchId} ${m.startedAt ? 'Started: ' + new Date(m.startedAt).toLocaleTimeString() : ''}</div>
       </div>`;
     }
     document.getElementById('content').innerHTML = html || '<p style="text-align:center;color:#8b949e;padding:2rem">No matches yet.</p>';
