@@ -13,6 +13,33 @@ import { Metrics } from './metrics';
 const GET1X2_API = process.env.GET1X2_API_URL || 'https://mel-bet.et/service-api/LiveFeed/Get1x2_VZip';
 const PARAMS = '?sports=3&champs=2935701&count=40&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
 
+function logItemStructure(item: any): void {
+    const keys: string[] = [];
+    for (const k of Object.keys(item)) {
+        const v = item[k];
+        const type = Array.isArray(v) ? `array[${v.length}]` : typeof v;
+        keys.push(`${k}:${type}`);
+    }
+    console.log('[Cron] Raw item keys:', keys.join(', '));
+
+    // Log nested SC keys
+    if (item.SC && typeof item.SC === 'object') {
+        const scKeys = Object.keys(item.SC).map(k => `${k}:${typeof item.SC[k]}`);
+        console.log('[Cron] SC keys:', scKeys.join(', '));
+    }
+
+    // Show timestamp-like values for discovery
+    for (const k of Object.keys(item)) {
+        const v = item[k];
+        if (typeof v === 'number' && v > 1000000000) {
+            console.log(`[Cron] Timestamp candidate: ${k}=${v} (date: ${new Date(v * 1000).toISOString()})`);
+        }
+    }
+    if (item.SC && typeof item.SC.SD === 'number') {
+        console.log(`[Cron] SC.SD=${item.SC.SD} (date: ${new Date(item.SC.SD * 1000).toISOString()})`);
+    }
+}
+
 function normalizeResponse(body: string): string {
     let finalBody = '{}';
     try {
@@ -85,7 +112,10 @@ function normalizeResponse(body: string): string {
                 return [];
             });
             if (excludedCount > 0) console.log(`[Cron] Excluded ${excludedCount} non-basketball matches`);
-            if (matchCount > 0) console.log(`[Cron] Cyber matches found: ${matchCount}`);
+            if (matchCount > 0) {
+                console.log(`[Cron] Cyber matches found: ${matchCount}`);
+                logItemStructure(jsonObj.Value[0]);
+            }
             finalBody = JSON.stringify({ ...jsonObj, Value: mappedValue });
         }
     } catch (e) {

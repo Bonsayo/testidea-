@@ -124,8 +124,12 @@ class ConvexAdapter implements StorageAdapter {
         let finalHomeScore: number | undefined;
         let finalAwayScore: number | undefined;
 
+        // Use the earliest score event time as startedAt (more accurate than obj.U)
+        const startedAt = scores.length > 0 ? scores[0]!.event_time : (match.startedAt ?? Date.now());
+
         if (match.status === "FINISHED" || match.status === "COMPLETED") {
-            finishedAt = Date.now();
+            // Use the last score event time as finishedAt (from MelBet game clock)
+            finishedAt = scores.length > 0 ? scores[scores.length - 1]!.event_time : Date.now();
             if (scores.length > 0) {
                 const lastScore = scores[scores.length - 1]!;
                 finalHomeScore = lastScore.home_score;
@@ -137,7 +141,7 @@ class ConvexAdapter implements StorageAdapter {
             await this.client.mutation(this.anyApi.mutations.saveMatch, {
                 matchId: match.id,
                 matchName: `${match.home_team} vs ${match.away_team}`,
-                startedAt: match.startedAt ?? (scores.length > 0 ? scores[0]!.event_time : Date.now()),
+                startedAt,
                 finishedAt,
                 finalHomeScore,
                 finalAwayScore,
@@ -478,7 +482,7 @@ export const DB = {
                         quarter: 'FINAL',
                         homeScore: final.home_score,
                         awayScore: final.away_score,
-                        timestamp: Date.now(),
+                        timestamp: final.event_time,
                         snapshotType: 'final',
                     };
                     adapter.persistQuarterSnapshot(snapshot).catch((err) =>
