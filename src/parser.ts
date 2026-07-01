@@ -40,11 +40,13 @@ export class Parser {
                     remaining_clock: obj.clock || obj.remaining_time
                 };
 
-                // Only insert if score changed or it's the first time
                 const history = DB.getMatchScores(match.id);
+                const lastScore = history[history.length - 1];
+                const quarterChanged = lastScore && lastScore.quarter !== scoreEvent.quarter;
                 if (history.length === 0 || 
-                    history[history.length - 1].home_score !== scoreEvent.home_score || 
-                    history[history.length - 1].away_score !== scoreEvent.away_score) {
+                    lastScore.home_score !== scoreEvent.home_score || 
+                    lastScore.away_score !== scoreEvent.away_score ||
+                    quarterChanged) {
                     DB.insertScoreEvent(scoreEvent);
                 }
             }
