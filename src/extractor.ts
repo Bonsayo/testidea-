@@ -43,15 +43,26 @@ export class Extractor {
                                 const odds: { home?: number; away?: number; over_under?: number } = {};
                                 if (item.E && Array.isArray(item.E)) {
                                     for (const m of item.E) {
-                                        if (m.T === 1 && m.C != null) odds.home = Number(m.C);
-                                        if (m.T === 2 && m.C != null) odds.away = Number(m.C);
-                                        if (m.T === 17 && m.C != null) {
-                                            odds.over_under = m.P != null ? Number(m.P) : Number(m.C);
+                                        const typeId = m.T ?? m.Type ?? m.type ?? m.marketId;
+                                        const coeff = m.C ?? m.coefficient ?? m.odd ?? m.price ?? m.value;
+                                        const param = m.P ?? m.param ?? m.line ?? m.Parameter;
+                                        console.log(`[OddsDebug] Market keys=${Object.keys(m).join(',')} T=${typeId} C=${coeff} P=${param}`);
+                                        if (typeId != null && coeff != null) {
+                                            const tid = Number(typeId);
+                                            if (tid === 1) odds.home = Number(coeff);
+                                            else if (tid === 2) odds.away = Number(coeff);
+                                            else if (tid === 17) odds.over_under = param != null ? Number(param) : Number(coeff);
                                         }
                                     }
+                                } else {
+                                    for (const k of ['odds', 'kf', 'coefficients', 'prices', 'markets']) {
+                                        if (item[k]) console.log(`[OddsDebug] Odds in '${k}': ${JSON.stringify(item[k]).substring(0,300)}`);
+                                    }
                                 }
-                                if (odds.home != null) {
+                                if (odds.home != null || odds.away != null) {
                                     console.log(`[Odds] ${item.I} | home=${odds.home} away=${odds.away} ou=${odds.over_under}`);
+                                } else {
+                                    console.log(`[OddsDebug] No odds extracted for match ${item.I}`);
                                 }
 
                                 for (const period of item.SC.PS) {
@@ -279,11 +290,20 @@ export class Extractor {
                                             const odds: { home?: number; away?: number; over_under?: number } = {};
                                             if (item.E && Array.isArray(item.E)) {
                                                 for (const m of item.E) {
-                                                    if (m.T === 1 && m.C != null) odds.home = Number(m.C);
-                                                    if (m.T === 2 && m.C != null) odds.away = Number(m.C);
-                                                    if (m.T === 17 && m.C != null) {
-                                                        odds.over_under = m.P != null ? Number(m.P) : Number(m.C);
+                                                    const typeId = m.T ?? m.Type ?? m.type ?? m.marketId;
+                                                    const coeff = m.C ?? m.coefficient ?? m.odd ?? m.price ?? m.value;
+                                                    const param = m.P ?? m.param ?? m.line ?? m.Parameter;
+                                                    console.log(`[OddsDebug] Market keys=${Object.keys(m).join(',')} T=${typeId} C=${coeff} P=${param}`);
+                                                    if (typeId != null && coeff != null) {
+                                                        const tid = Number(typeId);
+                                                        if (tid === 1) odds.home = Number(coeff);
+                                                        else if (tid === 2) odds.away = Number(coeff);
+                                                        else if (tid === 17) odds.over_under = param != null ? Number(param) : Number(coeff);
                                                     }
+                                                }
+                                            } else {
+                                                for (const k of ['odds', 'kf', 'coefficients', 'prices', 'markets']) {
+                                                    if (item[k]) console.log(`[OddsDebug] Odds in '${k}': ${JSON.stringify(item[k]).substring(0,300)}`);
                                                 }
                                             }
 

@@ -22,13 +22,11 @@ function logItemStructure(item: any): void {
     }
     console.log('[Cron] Raw item keys:', keys.join(', '));
 
-    // Log nested SC keys
     if (item.SC && typeof item.SC === 'object') {
         const scKeys = Object.keys(item.SC).map(k => `${k}:${typeof item.SC[k]}`);
         console.log('[Cron] SC keys:', scKeys.join(', '));
     }
 
-    // Show timestamp-like values for discovery
     for (const k of Object.keys(item)) {
         const v = item[k];
         if (typeof v === 'number' && v > 1000000000) {
@@ -37,6 +35,22 @@ function logItemStructure(item: any): void {
     }
     if (item.SC && typeof item.SC.SD === 'number') {
         console.log(`[Cron] SC.SD=${item.SC.SD} (date: ${new Date(item.SC.SD * 1000).toISOString()})`);
+    }
+
+    // Dump full E structure for odds discovery
+    if (item.E && Array.isArray(item.E)) {
+        console.log(`[Cron] E array length: ${item.E.length}`);
+        if (item.E.length > 0) {
+            console.log('[Cron] E[0] keys:', Object.keys(item.E[0]).join(', '));
+            console.log('[Cron] E[0] full:', JSON.stringify(item.E[0]));
+        }
+    } else {
+        console.log('[Cron] No E array found — checking for odds-like fields...');
+        for (const k of Object.keys(item)) {
+            if (k.toLowerCase().includes('odd') || k.toLowerCase().includes('kf') || k.toLowerCase().includes('price') || k.toLowerCase().includes('coef')) {
+                console.log(`[Cron] Odds candidate field: ${k}=${JSON.stringify(item[k]).substring(0, 200)}`);
+            }
+        }
     }
 }
 
@@ -65,11 +79,20 @@ function normalizeResponse(body: string): string {
                             const odds: { home?: number; away?: number; over_under?: number } = {};
                             if (item.E && Array.isArray(item.E)) {
                                 for (const m of item.E) {
-                                    if (m.T === 1 && m.C != null) odds.home = Number(m.C);
-                                    if (m.T === 2 && m.C != null) odds.away = Number(m.C);
-                                    if (m.T === 17 && m.C != null) {
-                                        odds.over_under = m.P != null ? Number(m.P) : Number(m.C);
+                                    const typeId = m.T ?? m.Type ?? m.type ?? m.marketId;
+                                    const coeff = m.C ?? m.coefficient ?? m.odd ?? m.price ?? m.value;
+                                    const param = m.P ?? m.param ?? m.line ?? m.Parameter;
+                                    console.log(`[Cron] Market: keys=${Object.keys(m).join(',')} T=${typeId} C=${coeff} P=${param}`);
+                                    if (typeId != null && coeff != null) {
+                                        const tid = Number(typeId);
+                                        if (tid === 1) odds.home = Number(coeff);
+                                        else if (tid === 2) odds.away = Number(coeff);
+                                        else if (tid === 17) odds.over_under = param != null ? Number(param) : Number(coeff);
                                     }
+                                }
+                            } else {
+                                for (const k of ['odds', 'kf', 'coefficients', 'prices', 'markets']) {
+                                    if (item[k]) console.log(`[Cron] Odds in '${k}': ${JSON.stringify(item[k]).substring(0,300)}`);
                                 }
                             }
 
