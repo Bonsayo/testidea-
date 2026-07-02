@@ -11,7 +11,7 @@ import { Parser } from './parser';
 import { Metrics } from './metrics';
 
 const GET1X2_API = process.env.GET1X2_API_URL || 'https://mel-bet.et/service-api/LiveFeed/Get1x2_VZip';
-const PARAMS = '?sports=3&count=80&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
+const PARAMS = '?sports=3&champs=2935701&count=80&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
 
 function logItemStructure(item: any): void {
     const keys: string[] = [];
