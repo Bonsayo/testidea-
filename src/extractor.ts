@@ -32,7 +32,11 @@ export class Extractor {
                             );
                             if (isBasketball) {
                                 const isCyber = (item.O1 && item.O1.toLowerCase().includes('(cyber)')) || (item.O2 && item.O2.toLowerCase().includes('(cyber)'));
-                                if (!isCyber) {
+                                const NBA_TEAMS = ['hawks', 'celtics', 'nets', 'hornets', 'bulls', 'cavaliers', 'mavericks', 'nuggets', 'pistons', 'warriors', 'rockets', 'pacers', 'clippers', 'lakers', 'grizzlies', 'heat', 'bucks', 'timberwolves', 'pelicans', 'knicks', 'thunder', 'magic', '76ers', 'sixers', 'suns', 'trail blazers', 'blazers', 'kings', 'spurs', 'raptors', 'jazz', 'wizards'];
+                                const team1 = (item.O1 || '').toLowerCase();
+                                const team2 = (item.O2 || '').toLowerCase();
+                                const isNbaCyber = isCyber && NBA_TEAMS.some(t => team1.includes(t)) && NBA_TEAMS.some(t => team2.includes(t));
+                                if (!isNbaCyber) {
                                     excludedCount++;
                                     return [];
                                 }
@@ -116,7 +120,7 @@ export class Extractor {
     }
 
     private async pollApi() {
-        const params = '?sports=3&champs=2935701&count=80&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
+        const params = '?sports=3&count=80&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
         try {
             const response = await fetch(this.get1x2Api + params, {
                 headers: {
@@ -275,7 +279,11 @@ export class Extractor {
                                             );
                                             if (isBasketball) {
                                                 const isCyber = (item.O1 && item.O1.toLowerCase().includes('(cyber)')) || (item.O2 && item.O2.toLowerCase().includes('(cyber)'));
-                                                if (!isCyber) {
+                                                const NBA_TEAMS = ['hawks', 'celtics', 'nets', 'hornets', 'bulls', 'cavaliers', 'mavericks', 'nuggets', 'pistons', 'warriors', 'rockets', 'pacers', 'clippers', 'lakers', 'grizzlies', 'heat', 'bucks', 'timberwolves', 'pelicans', 'knicks', 'thunder', 'magic', '76ers', 'sixers', 'suns', 'trail blazers', 'blazers', 'kings', 'spurs', 'raptors', 'jazz', 'wizards'];
+                                                const team1 = (item.O1 || '').toLowerCase();
+                                                const team2 = (item.O2 || '').toLowerCase();
+                                                const isNbaCyber = isCyber && NBA_TEAMS.some(t => team1.includes(t)) && NBA_TEAMS.some(t => team2.includes(t));
+                                                if (!isNbaCyber) {
                                                     excludedCount++;
                                                     return [];
                                                 }
