@@ -116,7 +116,7 @@ export class Extractor {
     }
 
     private async pollApi() {
-        const params = '?sports=3&champs=2935701&count=40&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
+        const params = '?sports=3&count=80&lng=en&gr=882&mode=4&country=213&partner=8&getEmpty=true&virtualSports=true&noFilterBlockEvent=true';
         try {
             const response = await fetch(this.get1x2Api + params, {
                 headers: {
